@@ -140,6 +140,7 @@ var editLabelDialog, label , labelID ;
 // variables for DB2
 var rawData = [], processedData = [], tableStats = []; 
 var colors = ['#003f5c','#2f4b7c','#665191','#a05195','#d45087','#f95d6a','#ff7c43','#ffa600'];
+var colorCounter = 0;
 
 const plugin = {
   id: 'customCanvasBackgroundColor',
@@ -213,81 +214,8 @@ $(document).ready(function () {
     },
   });
   
-  /**slider.on('slidestop', function () {
-              // alert('Slider Stop Event Triggered!');
-      updateTime();
-  })**/
-  // Slider for X max and min - not currently used
-  /**sliderX = $( "#sliderX" ).slider({
-      range: true,
-      min: 0,
-      max: 500,
-      values: [ 75, 300 ],
-      slide: function( event, ui ) {
-          // console.log( ui.values[ 0 ] + "  " + ui.values[ 1 ] );
-      }
-  }); **/
-  // Slider for y max and min - not currently used
-  /** sliderY = $( "#sliderY" ).slider({
-      range: true,
-      min: 0,
-      max: 500,
-      values: [ 75, 300 ],
-      slide: function( event, ui ) {
-          console.log( ui.values[ 0 ] + "  " + ui.values[ 1 ] );
-      }
-  }); **/
-
-  // Rotation slider, 0 to 2pi radians
-  sliderRot = $( "#sliderRot" ).slider({
-      // range: false,
-      min: 0,
-      max: 2*Math.PI,
-      step: 0.01,
-      values: 0,
-      slide: function( event, ui ) {
-          angle = ui.value;
-          plotData();
-      } 
-  });
-  
   // Canvas for Plot, includes mousedown functions to add marks, and Lines
-  ctx = $('#myChart').on({
-    mousedown: function(e) {
-      cords = mouseClickCords(e);
-      if (cords[0] != '' && cords[1] != '') {// check to see event has x, y coordinates
-        if (e.which  == 1) { //left mouse button - so will be adding a mark
-          // Build data item to add to data
-          item = { label: "Mark "+markCounter, data:  [xy2GPS(cords[0], cords[1])], showLine: false, pointStyle: 'circle', pointRadius: 5, bml:'mark' , hidden: false};
-          loadedData.push(item);
-          markCounter += 1;
-          // new data added, so have to replot
-          plotData();
-          updateObjectList();
-        }
-        if (e.which == 3) { //left mouse button - so start of line}
-          // remember start location
-          lineStartX = cords[0];
-          lineStartY = cords[1];
-        }
-      }
-    }
-    ,
-    mouseup: function(e) {
-      cords = mouseClickCords(e);
-      if (cords[0] != '' && cords[1] != '') {
-        if (e.which == 3) { //left mouse button}
-          // Mouse up on left mouse, so need to add a line
-          // Build line item
-          item = { label: "Line "+lineCounter , data:  [xy2GPS(lineStartX, lineStartY), xy2GPS(cords[0], cords[1])], showLine: true, pointStyle: 'rect', pointRadius: 3, bml:'line' , hidden: false};
-          loadedData.push(item);
-          lineCounter += 1;
-          plotData();
-          updateObjectList();
-        }
-      }
-    }
-  });
+  ctx = $('#myChart');
       
   // Create chart variable
   var myChart = new Chart(ctx, {
@@ -337,24 +265,6 @@ $(document).ready(function () {
           }
           // console.log(rawData);
           
-          //console.log(rawData);
-          //console.log(data);
-          //data.foreach(function (d)
-            //{
-              //console.log(whiteSpaceParser.parse(d));
-            //});      
-          //data.split(/\r?\n/).foreach(function (d){
-            //console.log(d.split(/\s+/g));
-          //});
-          //console.log(data)
-          /** var parser = d3.dsv(' ');
-          try{
-            var data = parser.parse(result);
-            console.log(data);
-          } 
-          catch {
-            console.log("error")
-          } **/
           processRawData();
         });
         reader.readAsText(file);
@@ -400,9 +310,10 @@ $(document).ready(function () {
 
         var item = {id: previousRow.id ,label:previousRow.id.split('.')[0], accessRateMax: aRateMax, updateRateMax: uRateMax
           ,accessRateAve:arate, updateRateAve:urate, data:processedData.filter(function(el){ return el.id === previousRow.id})
-          ,hidden: false, borderColor:colors[Math.floor(Math.random() * colors.length)]}
+          ,hidden: false, borderColor:colors[colorCounter]}
         tableStats.push(item);
-        aRateMax = 0; uRateMax = 0; firstTableRow=currentRow;
+        aRateMax = 0; uRateMax = 0; firstTableRow=currentRow; colorCounter +=1;
+        if(colorCounter > colors.length-1){colorCounter = 0;}
         //data.splice(0,data.length);
       }
     }
@@ -422,32 +333,6 @@ $(document).ready(function () {
   updateObjectList();
 }
 
-/** mouseClickCords converts a click on the chart to the x and y coordidates used by the plot
- *       Input e (the mouseclick event)
- * 		 Output [x,y] in the chart coordinates
- * **/ 
-function mouseClickCords(e){
-  var myChart = Chart.getChart('myChart');
-  var ytop = myChart.chartArea.top;
-  var ybottom = myChart.chartArea.bottom;
-  var newy = '';
-  var showstuff = 0;
-  if (e.offsetY <= ybottom && e.offsetY >= ytop) {
-    newy = Math.abs((e.offsetY - ytop) / (ybottom - ytop));
-    newy = (newy - 1) * -1;
-    newy = newy * (Math.abs(plotYMax - plotYMin)) + plotYMin;
-    showstuff = 1;
-  }
-  var xtop = myChart.chartArea.left;
-  var xbottom = myChart.chartArea.right;
-  var newx = '';
-  if (e.offsetX <= xbottom && e.offsetX >= xtop && showstuff == 1) {
-    newx = Math.abs((e.offsetX - xtop) / (xbottom - xtop));
-    newx = newx * (Math.abs(plotXMax - plotXMin)) + plotXMin;
-  }
-  return [newx, newy];
-}
-
 /** updateMaxMin updates all maximums and minimums
  * **/
 function updateMaxMin (){
@@ -462,90 +347,6 @@ function updateMaxMin (){
   slider.slider('values',1,maxTime);
 }
 
-/** radians converts degrees to radians
- *     Input: the degrees
- *     Output: radians
- * 
- * **/
-function radians(degrees) {
-  return degrees/180.00*Math.PI;
-}
-
-/** radians converts radians to degrees
- *     Input: the radians
- *     Output: degrees
- * 
- * **/
-function degrees(radians) {
-  return radians*180.00/Math.PI;
-}
-
-/** convertMeters: 
- * 1. Creates x, and y coordinates in meters from lat and lon
- * 2. Updates minimums and maximums based on the values of x, and y 
- * 3. Adjusts scales of plot to ensure a 1:1 aspect ratio (not perfect, but close)
- * 
- * **/ 
-function convertMeters(){
-
-// 1. Creates x, and y coordinates in meters from lat and lon
-    loadedData.forEach(item => {
-  // filter if outside range?  	
-    item.data.forEach(d => {
-      y = radians(d.Latitude - minLat)*R;
-      x = radians(d.Longitude - minLon)*R*Math.cos(radians(minLat));
-      const [x1,y1] = rotate(x,y, 1)
-      d.x = x1;
-      d.y = y1;
-    });          
-    });
-
-// 2. Updates minimums and maximums based on the values of x, and y
-    minX = d3.min(loadedData, function(ld){return d3.min(ld.data, function(d){return d.x})});
-    maxX = d3.max(loadedData, function(ld){return d3.max(ld.data, function(d){return d.x})});
-    minY = d3.min(loadedData, function(ld){return d3.min(ld.data, function(d){return d.y})});
-    maxY = d3.max(loadedData, function(ld){return d3.max(ld.data, function(d){return d.y})});
-    plotXMax = maxX;
-    plotYMax = maxY;
-    plotXMin = minX;
-    plotYMin = minY;
-
-// 3. Adjusts scales of plot to ensure a 1:1 aspect ratio (not perfect, but close)
-    const xLength = plotXMax - plotXMin;
-    const yLength = plotYMax - plotYMin;
-    if (xLength > yLength) {
-        const difference = xLength - yLength;
-        plotYMax = plotYMax + difference / 2;
-        plotYMin = plotYMin - difference / 2;
-    } else {
-        const difference = yLength - xLength;
-        plotXMax = plotXMax + difference / 2;
-        plotXMin = plotXMin - difference / 2;
-    }
-}
-
-/** xy2GPS: converts x, y coordinates to lat and lon
- *     Input: x, y (in meters)
- * 	   Returns: lon, lat (as array)
- * **/
-function xy2GPS(x, y) {
-  const [x1,y1] = rotate(x,y, -1);
-  lat = minLat + degrees(y1/R);
-  lon = minLon + degrees(x1/R/Math.cos(radians(minLat)));
-  // console.log (minLat, lat, minLon, lon);
-      return {'Longitude':lon,'Latitude':lat}
-}
-
-/** rotate: rotates x, y coordinates about 0.0 
- *     Input: x, y (in meters), dir (+1 or -1)
- *     Uses: angle - which comes from the angle slider
- * 	   Returns: lon, lat (as array)
- * **/
-  function rotate(x,y,dir){
-          x1 = x*Math.cos(angle*dir)-y*Math.sin(angle*dir);
-          y1 = x*Math.sin(angle*dir)+y*Math.cos(angle*dir);
-          return [x1,y1];
-  }
 
 /** plotData - creates the plot 
  * 
@@ -601,80 +402,7 @@ function xy2GPS(x, y) {
       myChart = new Chart(ctx, cfg);
   };
 
-  /** updateTime: expected to be run as part of a loop, 
- * 	Creates a copy of the loaded data
- *  Deletes all points that are outside the time parameters 
- *  Uses Global values timeStart and timeEnd
- * **/
-function updateTime(){
-  // myChart = Chart.getChart('myChart'); // find the chart in component with id 'myChart'
-  loadedData.forEach(item => {
-    if (item.bml == 'boat'){ // need to only filter out boats, not marks and lines
-      for (i = item.data.length - 1; i >= 0; --i) {
-        if (item.data[i].milliseconds < timeStart || item.data[i].milliseconds  > timeEnd) {
-          item.pointRadius[i] = 0; // Remove elements
-        } else {
-          item.pointRadius[i] = 1; // Add elements back
-        }
-      }
-    }
-  });
-  myChart.update(); //update what is seen
-};
-
-/** startStopAnnimmdation (sp?): toggles between time annimation or not
- *  Either clears, or starts the annimationInterval
- * 
- * **/
-function startStopAnnimdation(){
-  if(annimationInterval) { 
-    clearInterval(annimationInterval);
-    annimationInterval = null;
-    lastUpdate = null;
-  }
-  else {
-    annimationInterval = setInterval(annimateTime, 100);
-  }
-}
-
-/** annimateTime - processes the update to time (as part of a loop) to annimate over time
- * Uses value from timeMultipler Input
- * updates time slider
- * then calls updateTime to actually do the graph update
- * **/
-function annimateTime(){
-  var delta
-  var timeMultiplier = $("#timeMultiplier").val(); 
-  // console.log("timeMultiplier = "+timeMultiplier) 
-  if (!timeMultiplier){
-    timeMultiplier = 20;}
-
-  if (!lastUpdate){
-    lastUpdate = Date.now();
-    delta = 0;
-  } else {
-    delta = (Date.now()-lastUpdate) * timeMultiplier;
-    lastUpdate = Date.now();
-  }
   
-  // var myChart = Chart.getChart('myChart');
-  timeStart = timeStart + delta;
-  timeEnd = timeEnd + delta;
-  if (timeEnd > maxTime) {
-    timeEnd = maxTime;
-    startStopAnnimdation();
-  }
-
-  if (timeStart < minTime) {
-    timeStart = maxTime;
-    startStopAnnimdation();
-  }
-
-  slider.slider('values',0,timeStart); // sets first handle (index 0) to 50
-  slider.slider('values',1,timeEnd);
-  updateTime();
-}
-
 /** updateObjectList 
  *  Builds the list of objects, including options to delete, make invisible, etc
  * **/
