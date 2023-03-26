@@ -139,7 +139,8 @@ var editLabelDialog, label , labelID ;
 
 // variables for DB2
 var rawData = [], processedData = [], tableStats = []; 
-var colors = ['#003f5c','#2f4b7c','#665191','#a05195','#d45087','#f95d6a','#ff7c43','#ffa600'];
+var colors = ['#a50026','#d73027','#f46d43','#fdae61','#fee08b','#d9ef8b','#a6d96a','#66bd63','#1a9850','#006837'];
+// var colors = ['#003f5c','#2f4b7c','#665191','#a05195','#d45087','#f95d6a','#ff7c43','#ffa600'];
 var colorCounter = 0;
 
 const plugin = {
@@ -310,7 +311,7 @@ $(document).ready(function () {
 
         var item = {id: previousRow.id ,label:previousRow.id.split('.')[0], accessRateMax: aRateMax, updateRateMax: uRateMax
           ,accessRateAve:arate, updateRateAve:urate, data:processedData.filter(function(el){ return el.id === previousRow.id})
-          ,hidden: false, borderColor:colors[colorCounter]}
+          ,hidden: false, borderColor:colors[colorCounter], pointRadius:0}
         tableStats.push(item);
         aRateMax = 0; uRateMax = 0; firstTableRow=currentRow; colorCounter +=1;
         if(colorCounter > colors.length-1){colorCounter = 0;}
@@ -324,24 +325,28 @@ $(document).ready(function () {
   tableStats = tableStats.sort((a,b)=> {return a.accessRateAve < b.accessRateAve ? 1 : -1 });
   // builtPlotData();
   tableStats[0].accessRateAve;
+  colorCounter = 0;
+  // minTime = tableStats[0].data[0].timestamp;
+  //maxTime = tableStats[0].data[0].timestamp;
   tableStats.forEach(function(item) {
     if(item.accessRateAve > tableStats[0].accessRateAve / 100.0){
       item.hidden = false;
+      item.borderColor = colors[colorCounter];
+      // minTime = (minTime> d3.min())
+      colorCounter +=1; colorCounter = (colorCounter > colors.length-1) ? 0 : colorCounter;
+      // if(colorCounter > colors.length-1){colorCounter = 0;}
     } else {item.hidden = true;}
   })
   plotData();
   updateObjectList();
+  updateMaxMin()
 }
 
 /** updateMaxMin updates all maximums and minimums
  * **/
 function updateMaxMin (){
-  minLon = d3.min(loadedData, function(ld){return d3.min(ld.data, function(d){return d.Longitude})});
-  maxLon = d3.max(loadedData, function(ld){return d3.max(ld.data, function(d){return d.Longitude})});
-  minLat = d3.min(loadedData, function(ld){return d3.min(ld.data, function(d){return d.Latitude})});
-  maxLat = d3.max(loadedData, function(ld){return d3.max(ld.data, function(d){return d.Latitude})});
-  minTime = d3.min(loadedData, function(ld){return d3.min(ld.data, function(d){return d.milliseconds})});
-  maxTime = d3.max(loadedData, function(ld){return d3.max(ld.data, function(d){return d.milliseconds})});
+  minTime = d3.min(tableStats, function(ld){return d3.min(ld.data, function(d){return d.timestamp})});
+  maxTime = d3.max(tableStats, function(ld){return d3.max(ld.data, function(d){return d.timestamp})});
   slider.slider("option", "min", minTime); slider.slider("option", "max", maxTime);
   slider.slider('values',0,minTime); // sets first handle (index 0) to 50
   slider.slider('values',1,maxTime);
@@ -406,7 +411,11 @@ function updateMaxMin (){
  * Update graph filtering based  on start and end time values
  * **/
 function updateTime(){
-  
+  var myChart = Chart.getChart('myChart');
+  myChart.options.scales.x.min = timeStart;
+  myChart.options.scales.x.max = timeEnd;
+  // If time difference between timeStart and timeEnd is small, add in 6 hour ticks
+  myChart.update();
 }
   
 /** updateObjectList 
