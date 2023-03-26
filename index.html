@@ -311,7 +311,8 @@ $(document).ready(function () {
 
         var item = {id: previousRow.id ,label:previousRow.id.split('.')[0], accessRateMax: aRateMax, updateRateMax: uRateMax
           ,accessRateAve:arate, updateRateAve:urate, data:processedData.filter(function(el){ return el.id === previousRow.id})
-          ,hidden: false, borderColor:colors[colorCounter], pointRadius:0}
+          ,hidden: false, borderColor:colors[colorCounter], backgroundColor: colors[colorCounter]
+          ,pointRadius:0,borderWidth: 1}
         tableStats.push(item);
         aRateMax = 0; uRateMax = 0; firstTableRow=currentRow; colorCounter +=1;
         if(colorCounter > colors.length-1){colorCounter = 0;}
@@ -332,6 +333,7 @@ $(document).ready(function () {
     if(item.accessRateAve > tableStats[0].accessRateAve / 100.0){
       item.hidden = false;
       item.borderColor = colors[colorCounter];
+      item.backgroundColor = colors[colorCounter];
       // minTime = (minTime> d3.min())
       colorCounter +=1; colorCounter = (colorCounter > colors.length-1) ? 0 : colorCounter;
       // if(colorCounter > colors.length-1){colorCounter = 0;}
@@ -392,8 +394,21 @@ function updateMaxMin (){
               duration: 0
           }   ,
           plugins: {
+            //legend: {
+              //display: false
+            //},
             legend: {
-              display: false
+              labels: {
+                filter: function(legendItem, data) {
+                  let label = data.datasets[legendItem.datasetIndex].label || '';
+                  console.log(data.datasets[legendItem.datasetIndex].hidden);
+                  //let hidden = data.datasets[legendItem.datasetInces].hidden || true;
+                  if (data.datasets[legendItem.datasetIndex].hidden){
+                    return false;
+                  }
+                  return label;
+                }
+              }
             },
             customCanvasBackgroundColor: {
               color: 'white',
