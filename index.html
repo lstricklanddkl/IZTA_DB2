@@ -369,7 +369,7 @@ function updateMaxMin (){
         },
         options: {
           parsing: { xAxisKey: 'timestamp', yAxisKey: 'accessRate' },
-          events: [''] ,
+          // events: ['onhover'] ,
           scales: {
               x: {
                   type: 'time',
@@ -397,10 +397,13 @@ function updateMaxMin (){
                   }
               }
           },
-          
           animation: {
               duration: 0
-          }   ,
+          },
+          hover: {
+            mode: 'nearest',
+            intersect: true
+          },
           plugins: {
             //legend: {
               //display: false
@@ -421,7 +424,23 @@ function updateMaxMin (){
             },
             customCanvasBackgroundColor: {
               color: 'white',
-            }
+            },
+            tooltip:{
+              enabled: true,
+              mode: 'index',
+              callbacks: {
+                label: function(context){
+                  let label = context.dataset.label || '';
+
+                  if (label) {
+                      label += ': ';
+                  }
+
+                  return label;
+                }
+              }
+            },
+            
           }  
         },
         plugins: [plugin],
