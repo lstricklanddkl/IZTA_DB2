@@ -170,8 +170,8 @@ $(document).ready(function () {
 
   $("#rightcolumn").resizable({handles: 'e'});
   $("#leftcolumn").resizable({handles: 'e'});
-  $("#rightcolumn").draggable();
-  $("#leftcolumn").draggable();
+  //$("#rightcolumn").draggable();
+  //$("#leftcolumn").draggable();
   
   /** 
    * label, lableID editLabelDialog and form are all used as part of the ability to modify labels on
@@ -223,13 +223,6 @@ $(document).ready(function () {
       type: 'line',
       data: {}
   });
-  
-  //$("#confCsv").addEventListener('click', function() {
-  /**document.querySelector("#confCsv").addEventListener('click', function() {
-    if(document.querySelector("#csv").files.length == 0) {
-      alert('Error : No file selected');
-    return;
-    } **/
 
   document.querySelector("#csv").addEventListener('change',function () {
     
@@ -287,7 +280,7 @@ $(document).ready(function () {
   var firstTableRow = rawData[0];
   //var data = [];
   //data.push({});
-  var aRateMax =0, uRateMax = 0;
+  var aRateMax =0, uRateMax = 0; aRateSum=0; uRateSum=0; timeSum = 0;
   for(i=1; i<=rawData.length-1; i++){ //rawData.length-1
     currentRow = rawData[i];
     if(previousRow.id === currentRow.id){
@@ -299,15 +292,22 @@ $(document).ready(function () {
         var urate = 1000 * (currentRow.writes-previousRow.writes)/(currentRow.timestamp-previousRow.timestamp);
         if (urate>uRateMax) {uRateMax = urate;}
         // console.log(currentRow.timestamp - previousRow.timestamp);
-        processedData.push({id:currentRow.id,timestamp:previousRow.timestamp+100, 
-          accessRate:arate, updateRate:urate});
-        processedData.push({id:currentRow.id,timestamp:currentRow.timestamp, 
-          accessRate:arate, updateRate:urate});
+        if(arate >= 0.0){
+          processedData.push({id:currentRow.id,timestamp:previousRow.timestamp+100, 
+            accessRate:arate, updateRate:urate});
+          processedData.push({id:currentRow.id,timestamp:currentRow.timestamp, 
+            accessRate:arate, updateRate:urate});
+          aRateSum =+ currentRow.accesses-previousRow.accesses; 
+          uRateSum += currentRow.writes-previousRow.writes; 
+          timeSum += currentRow.timestamp-previousRow.timestamp;
         }
+      }
     } else {
       if(previousRow.timestamp>firstTableRow.timestamp){
-        var arate = 1000 * (previousRow.accesses-firstTableRow.accesses)/(previousRow.timestamp-firstTableRow.timestamp);
-        var urate = 1000 * (previousRow.writes-firstTableRow.writes)/(previousRow.timestamp-firstTableRow.timestamp);
+        var arate = 1000 * (aRateSum)/(timeSum);
+        var urate = 1000 * (uRateSum)/(timeSum);
+        // var arate = 1000 * (previousRow.accesses-firstTableRow.accesses)/(previousRow.timestamp-firstTableRow.timestamp);
+        // var urate = 1000 * (previousRow.writes-firstTableRow.writes)/(previousRow.timestamp-firstTableRow.timestamp);
 
         var item = {id: previousRow.id ,label:previousRow.id.split('.')[0], accessRateMax: aRateMax, updateRateMax: uRateMax
           ,accessRateAve:arate, updateRateAve:urate, data:processedData.filter(function(el){ return el.id === previousRow.id})
@@ -391,10 +391,20 @@ function updateMaxMin (){
                     enabled: true,
                     callback: function(val, index) {
                       // Hide every 2nd tick label
-                      console.log(val + " " + index + " "+ this.getLabelForValue(val));
+                      //console.log(val + " " + index + " "+ this.getLabelForValue(val));
                       return this.getLabelForValue(val);
                     },
+                  },
+                  title: {
+                    display: true, 
+                    text:"Date Time",
                   }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: "Read rate (reads/second)",
+                }
               }
           },
           animation: {
@@ -427,14 +437,16 @@ function updateMaxMin (){
             },
             tooltip:{
               enabled: true,
-              mode: 'index',
+              mode: 'point',
               callbacks: {
                 label: function(context){
                   let label = context.dataset.label || '';
 
                   if (label) {
-                      label += ': ';
+                      label += ': ' + parseFloat(context.formattedValue).toFixed(0);
+                      label += ' @ ' + context.label;
                   }
+                  console.log(context);
 
                   return label;
                 }
@@ -628,6 +640,7 @@ function screenShot(){
 
 <div class="topnav">
   <a href="#" onclick="downloadJSON()">Save</a>
+  <a href="#" onclick="$('#csv').trigger('click')">Load Files</a>
   <a href="#" onclick="loadJSON()">Load</a>
   <a href="#" onclick="screenShot()">Screenshot</a>
   <a href="help.html" rel="modal:open" class="modal" style="float:right">Help</a>
@@ -644,9 +657,9 @@ function screenShot(){
     </div>
   </div>
   <div class="rightcolumn" id="rightcolumn">
-    <div class="card">
-      <div id="insertCSV" class = "formblacktransparent">
-        <h2>Load Files:</h2>
+    <div class="card" hidden="hidden">
+      <div id="insertCSV" class = "formblacktransparent" >
+        <h3>Load Files:</h3>
         <input id="csv" type="file" class="form-control"  multiple> </input>
       </div>
     </div>
