@@ -369,27 +369,35 @@ function updateMaxMin (){
         },
         options: {
           parsing: { xAxisKey: 'timestamp', yAxisKey: 'accessRate' },
-          events: ['click'] ,
+          events: [''] ,
           scales: {
               x: {
                   type: 'time',
                   time: {
-                      unit: 'day'
+                    //parser: 'MM/DD/YYYY HH:mm',
+                    tooltipFormat: 'MM/dd/yyyy HH:mm',
+                    minUnit: 'hour',
+                    unitStepSize: 6,
+                    displayFormats: {
+                      'hour': 'HH:00',
+                      'day': 'MM/dd/yyyy'
+                    }
                   },
+                  /**time: {
+                      unit: 'hour',
+                      unitStepSize: 6,
+                  }, **/
+                  ticks:{
+                    enabled: true,
+                    callback: function(val, index) {
+                      // Hide every 2nd tick label
+                      console.log(val + " " + index + " "+ this.getLabelForValue(val));
+                      return this.getLabelForValue(val);
+                    },
+                  }
               }
           },
-          //maintainAspectRatio: true,
-          //aspectRatio: 1, //this is fixed at 1, because I haven't found an easy way to have other aspect ratios. 
-          /**scales: {
-              y: {
-                  min: plotYMin, 
-                  max: plotYMax
-              },
-              x: {
-                  min: plotXMin, 
-                  max: plotXMax    
-              }
-          },**/
+          
           animation: {
               duration: 0
           }   ,
@@ -398,11 +406,12 @@ function updateMaxMin (){
               //display: false
             //},
             legend: {
+              position: 'right',
               labels: {
+                usePointStyle:true,
+                pointStyle: 'line',
                 filter: function(legendItem, data) {
                   let label = data.datasets[legendItem.datasetIndex].label || '';
-                  console.log(data.datasets[legendItem.datasetIndex].hidden);
-                  //let hidden = data.datasets[legendItem.datasetInces].hidden || true;
                   if (data.datasets[legendItem.datasetIndex].hidden){
                     return false;
                   }
@@ -449,9 +458,9 @@ function updateObjectList(){
        colorString += '<option value="'+colors[j]+'" rgb="'+colors[j]+'" style="background-color:'+colors[j]+'"> </option>'
     });
     if(tableStats[i].hidden){
-      var vis_icon = '<span class="ui-icon ui-icon-check" onclick="showItem('+i+')"/>'
+      var vis_icon = '<span class="ui-icon ui-icon-check" onclick="showItem('+i+')"/><span class="ui-icon ui-icon-blank"/>'
     } else {
-      var vis_icon = '<span class="ui-icon ui-icon-close" onclick="hideItem('+i+')"/>'
+      var vis_icon = '<span class="ui-icon ui-icon-blank"/><span class="ui-icon ui-icon-close" onclick="hideItem('+i+')"/>'
     }
     loadedObjects.append(
       '<div>' 
