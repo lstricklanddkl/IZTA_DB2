@@ -110,6 +110,7 @@ body {
 <script type="text/javascript" src="./lib/js/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script type="text/javascript" src="./lib/js/jquery-latest.js"></script>
 <script type="text/javascript" src="./lib/js/jquery-ui-latest.js"></script>
+<script type="text/javascript" src="./lib/js/html2pdf.bundle.min.js"></script>
 <!--script type="text/javascript" src="./lib/js/jquery-migrate-3.4.0.js"></script-->
 <!--script type="text/javascript" src="./lib/js/jquery.layout-1.3.0.rc30.80.js"></script-->
 <!--script type="text/javascript" src="./lib/js/jquery-csv.js"></script-->
@@ -118,8 +119,8 @@ body {
 
 // Global Variables 
 var ctx;
-var canvas = [];
-var charts = [];
+// var canvas = [];
+// var charts = [];
 var slider, timeStart, timeEnd; // slider and selected values for time - reset on file load
 // var sliderX, xMax, xMin, plotXMax, plotXMin; // sider for selected Max and Min of X - reset on file load or rotation
 // var sliderY, yMax, yMin, plotYMax, plotYMin; // slider for slecting max and min of Y - reset on file load or rotation
@@ -260,7 +261,7 @@ $(document).ready(function () {
         // TO BE DONE: Validate csv format is good for this application
           result = e.target.result; // should contain a collection of rows from file
           //console.log(result);
-          const whiteSpaceParser = d3.dsvFormat(" ");
+          // const whiteSpaceParser = d3.dsvFormat(" ");
           //const data = whiteSpaceParser.parse(result);
           data = result.split(/\r?\n/);
           console.log(data.length);
@@ -393,6 +394,20 @@ function updateMaxMin (){
   slider.slider('values',1,maxTime);
 }
 
+function downloadReport(){
+  var element = document.getElementById('report');
+  var opt = {
+    margin:       1,
+    filename:     'html2pdf_example.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    pagebreak:    { mode: 'avoid-all', after: '#break' },
+    jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+  // Choose the element that our invoice is rendered in.
+  html2pdf().set(opt).from(element).save();
+}
+
 function generateReport(){
   $('#report').empty();
   tableStats.forEach(function(item) {
@@ -400,11 +415,12 @@ function generateReport(){
     if(!item.hidden){
       var smallDiv = '<div class="card" name="'+item.label+'"><h2>'+item.label+'</h2>';
       smallDiv += '<p>This tables has an average read rate (per second) of '+item.accessRateAve+' which represents a MIP usage of '+item.accessRateAve/400+' to '+item.accessRateAve/100+'MIPS for the entire period of the graph. </p>';
-      smallDiv += '<p>This tables has an peak read rate (per second) of '+item.accessRateMax+' which represents a MIP usage of '+item.accessRateMax/400+' to '+item.accessRateMx/100+'MIPS for the entire period of the peak. </p>';
+      smallDiv += '<p>This tables has an peak read rate (per second) of '+item.accessRateMax+' which represents a MIP usage of '+item.accessRateMax/400+' to '+item.accessRateMax/100+'MIPS for the entire period of the peak. </p>';
       if(item.hasReorg){smallDiv += '<p>This table has been reorg\'d at somepoint, which may impact results.  This is indicated on the graph by a sloped line (due to  missing data point when the reorg occured).</p>';}
       smallDiv += '</div>';
+      var pagebreak = '<div id="break" name="break" class="break" style="break-before: always;"></div>';
       var canvas = document.createElement('canvas');
-      $('#report').append(smallDiv).append(canvas);
+      $('#report').append(smallDiv).append(canvas).append(pagebreak);
       var ctxs = canvas.getContext("2d");
       var chart =  new Chart(ctxs, {
                                 type: 'line',
@@ -764,6 +780,7 @@ function screenShot(){
   <!--a href="#" onclick="loadJSON()">Load</a-->
   <a href="#" onclick="screenShot()">Screenshot</a>
   <a href="#" onclick="generateReport()">Report</a>
+  <a href ="#" onclick="downloadReport()">Download</a>
   <!--a href="#" onclick="sortTables('accessRateAve', 100)">Sort by avg</a-->
   <!--a href="#" onclick="sortTables('accessRateMax',100)">Sort by max</a-->
   <a href="help.html" rel="modal:open" class="modal" style="float:right">Help</a>
