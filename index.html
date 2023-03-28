@@ -472,13 +472,11 @@ function updateMaxMin (){
               callbacks: {
                 label: function(context){
                   let label = context.dataset.label || '';
-
                   if (label) {
                       label += ': ' + parseFloat(context.formattedValue).toFixed(0);
                       label += ' @ ' + context.label;
                   }
-                  console.log(context);
-
+                  //console.log(context);
                   return label;
                 }
               }
