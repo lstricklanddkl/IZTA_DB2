@@ -110,7 +110,6 @@ body {
 <script type="text/javascript" src="./lib/js/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script type="text/javascript" src="./lib/js/jquery-latest.js"></script>
 <script type="text/javascript" src="./lib/js/jquery-ui-latest.js"></script>
-<script type="text/javascript" src="./lib/js/jquery-migrate-3.4.0.js"></script>
 <!--script type="text/javascript" src="./lib/js/jquery.layout-1.3.0.rc30.80.js"></script-->
 <script type="text/javascript" src="./lib/js/jquery-csv.js"></script>
 <script type="text/javascript" src="./lib/js/d3.v7.min.js"></script>
@@ -168,21 +167,7 @@ $(document).ready(function () {
         .load($(this).attr('href')).appendTo('body').dialog().dialog("option","title","Help");
     });
   }); 
-  $("#showNum").spinner({
-      step: 1,
-      change: function( event, data ) {
-        // console.log(event);
-        sortTables($('#sortBy').val(), parseInt($('#showNum').val()));
-      }
-     });
-  $("#showNum").width(30);
-  $('#sortBy').selectmenu({
-      change: function( event, data ) {
-        sortTables(data.item.value, parseInt($('#showNum').val()));
-      }
-     });
 
-  
   $("#rightcolumn").resizable({handles: 'e'});
   $("#leftcolumn").resizable({handles: 'e'});
   //$("#rightcolumn").draggable();
@@ -298,10 +283,6 @@ $(document).ready(function () {
   var aRateMax =0, uRateMax = 0; aRateSum=0; uRateSum=0; timeSum = 0;
   for(i=1; i<=rawData.length-1; i++){ //rawData.length-1
     currentRow = rawData[i];
-    //if(currentRow.id === "EQ_POSSESSION.EQPMN001.EQ000310.EQ"){
-        //console.log(aRateSum +" "+ uRateSum +" "+ timeSum+" "+arate+ " " + i);
-        //console.log(currentRow);
-    //}
     if(previousRow.id === currentRow.id){
       // console.log(currentRow.timestamp - previousRow.timestamp);
       // console.log(previousRow.timestamp<currentRow.timeStamp);
@@ -316,13 +297,13 @@ $(document).ready(function () {
             accessRate:arate, updateRate:urate});
           processedData.push({id:currentRow.id,timestamp:currentRow.timestamp, 
             accessRate:arate, updateRate:urate});
-          aRateSum += currentRow.accesses-previousRow.accesses; 
+          aRateSum =+ currentRow.accesses-previousRow.accesses; 
           uRateSum += currentRow.writes-previousRow.writes; 
           timeSum += currentRow.timestamp-previousRow.timestamp;
-        } 
+        }
       }
     } else {
-      if(previousRow.timestamp>firstTableRow.timestamp && timeSum>0){
+      if(previousRow.timestamp>firstTableRow.timestamp){
         var arate = 1000 * (aRateSum)/(timeSum);
         var urate = 1000 * (uRateSum)/(timeSum);
         // var arate = 1000 * (previousRow.accesses-firstTableRow.accesses)/(previousRow.timestamp-firstTableRow.timestamp);
@@ -333,46 +314,34 @@ $(document).ready(function () {
           ,hidden: false, borderColor:colors[colorCounter], backgroundColor: colors[colorCounter]
           ,pointRadius:0,borderWidth: 1}
         tableStats.push(item);
-        //if(item.id === "EQ_POSSESSION.EQPMN001.EQ000310.EQ"){
-          //console.log(aRateSum +" "+ uRateSum +" "+ timeSum)
-        //}
         aRateMax = 0; uRateMax = 0; firstTableRow=currentRow; colorCounter +=1;
-        aRateSum =0; uRateSum = 0; timeSum = 0;
         if(colorCounter > colors.length-1){colorCounter = 0;}
         //data.splice(0,data.length);
       }
     }
     previousRow = currentRow;
   }
-
-  sortTables('accessRateAve', 10)
-}
-
-function sortTables(method, factor){
-  // console.log(method+" "+factor);
-  tableStats = tableStats.sort((a,b)=> {return a[method] < b[method] ? 1 : -1 });
+  //console.log("finished");
+  //console.log(processedData);
+  tableStats = tableStats.sort((a,b)=> {return a.accessRateAve < b.accessRateAve ? 1 : -1 });
   // builtPlotData();
-  //tableStats[0][method];
+  tableStats[0].accessRateAve;
   colorCounter = 0;
-  shownCounter = 1;
   // minTime = tableStats[0].data[0].timestamp;
   //maxTime = tableStats[0].data[0].timestamp;
   tableStats.forEach(function(item) {
-    // if(item[method] > tableStats[0][method] / factor){
-    if(shownCounter <= factor && !isNaN(item[method])){
+    if(item.accessRateAve > tableStats[0].accessRateAve / 100.0){
       item.hidden = false;
-      shownCounter +=1;
-    } else {item.hidden = true;}
-    item.borderColor = colors[colorCounter];
-    item.backgroundColor = colors[colorCounter];
-    // minTime = (minTime> d3.min())
-    colorCounter +=1; colorCounter = (colorCounter > colors.length-1) ? 0 : colorCounter;
-      
+      item.borderColor = colors[colorCounter];
+      item.backgroundColor = colors[colorCounter];
+      // minTime = (minTime> d3.min())
+      colorCounter +=1; colorCounter = (colorCounter > colors.length-1) ? 0 : colorCounter;
       // if(colorCounter > colors.length-1){colorCounter = 0;}
+    } else {item.hidden = true;}
   })
-  updateMaxMin()
   plotData();
   updateObjectList();
+  updateMaxMin()
 }
 
 /** updateMaxMin updates all maximums and minimums
@@ -520,16 +489,16 @@ function updateObjectList(){
        colorString += '<option value="'+colors[j]+'" rgb="'+colors[j]+'" style="background-color:'+colors[j]+'"> </option>'
     });
     if(tableStats[i].hidden){
-      var vis_icon = '<span class="ui-icon ui-icon-check" onclick="showItem('+i+')"></span><span class="ui-icon ui-icon-blank"></span>'
+      var vis_icon = '<span class="ui-icon ui-icon-check" onclick="showItem('+i+')"/><span class="ui-icon ui-icon-blank"/>'
     } else {
-      var vis_icon = '<span class="ui-icon ui-icon-blank"></span><span class="ui-icon ui-icon-close" onclick="hideItem('+i+')"></span>'
+      var vis_icon = '<span class="ui-icon ui-icon-blank"/><span class="ui-icon ui-icon-close" onclick="hideItem('+i+')"/>'
     }
     loadedObjects.append(
       '<div>' 
       + vis_icon
       + '<select onchange="updateColor('+i+',this)" style="background-color:'+tableStats[i].borderColor+'">'+ colorString + '</select>'
-      + '<span class="ui-icon ui-icon-trash" onclick="deleteItem('+i+')"></span>'
-      + '<span class="ui-icon ui-icon-pencil" onclick="editLabelPopup('+i+')"></span>'
+      + '<span class="ui-icon ui-icon-trash" onclick="deleteItem('+i+')"/>'
+      + '<span class="ui-icon ui-icon-pencil" onclick="editLabelPopup('+i+')"/>'
       + tableStats[i].label+'</div>'
     )
   });
@@ -670,14 +639,11 @@ function screenShot(){
 </div>
 
 <div class="topnav">
-  <!--a href="#" onclick="downloadJSON()">Save</a-->
+  <a href="#" onclick="downloadJSON()">Save</a>
   <a href="#" onclick="$('#csv').trigger('click')">Load Files</a>
-  <!--a href="#" onclick="loadJSON()">Load</a-->
+  <a href="#" onclick="loadJSON()">Load</a>
   <a href="#" onclick="screenShot()">Screenshot</a>
-  <!--a href="#" onclick="sortTables('accessRateAve', 100)">Sort by avg</a-->
-  <!--a href="#" onclick="sortTables('accessRateMax',100)">Sort by max</a-->
   <a href="help.html" rel="modal:open" class="modal" style="float:right">Help</a>
-  <div hidden="hidden"><input id="csv" type="file" class="form-control"  multiple> </input></div>
 </div>
 
 <div class="row">
@@ -691,16 +657,10 @@ function screenShot(){
     </div>
   </div>
   <div class="rightcolumn" id="rightcolumn">
-    <div class="card" >
-      <div class = "formblacktransparent" >
-        <p>Sort by: 
-          <select id="sortBy" name = "sortby">
-            <option value="accessRateAve" selected="selected">Average Access Rate</option>
-            <option value="accessRateMax">Maximum Access Rate</option>
-          </select>
-        </p>
-        <p>Show top <input id="showNum" name="showNume" value="10" width="20"/> tables.
-        </p>
+    <div class="card" hidden="hidden">
+      <div id="insertCSV" class = "formblacktransparent" >
+        <h3>Load Files:</h3>
+        <input id="csv" type="file" class="form-control"  multiple> </input>
       </div>
     </div>
     <!--div class="card">
