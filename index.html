@@ -104,38 +104,40 @@ body {
   }
 }
 </style>
-<link rel="stylesheet" href="./jquery/jquery-ui.css">
+<link rel="stylesheet" href="./lib/css/jquery-ui.min.css">
 <!--link type="text/css" rel="stylesheet" href="./lib/css/jquery.jqplot.css" /-->
 <script type="text/javascript" src="./lib/js/chart.js"></script>
 <script type="text/javascript" src="./lib/js/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script type="text/javascript" src="./lib/js/jquery-latest.js"></script>
 <script type="text/javascript" src="./lib/js/jquery-ui-latest.js"></script>
-<script type="text/javascript" src="./lib/js/jquery-migrate-3.4.0.js"></script>
+<!--script type="text/javascript" src="./lib/js/jquery-migrate-3.4.0.js"></script-->
 <!--script type="text/javascript" src="./lib/js/jquery.layout-1.3.0.rc30.80.js"></script-->
-<script type="text/javascript" src="./lib/js/jquery-csv.js"></script>
+<!--script type="text/javascript" src="./lib/js/jquery-csv.js"></script-->
 <script type="text/javascript" src="./lib/js/d3.v7.min.js"></script>
 <script>
 
 // Global Variables 
 var ctx;
+var canvas = [];
+var charts = [];
 var slider, timeStart, timeEnd; // slider and selected values for time - reset on file load
-var sliderX, xMax, xMin, plotXMax, plotXMin; // sider for selected Max and Min of X - reset on file load or rotation
-var sliderY, yMax, yMin, plotYMax, plotYMin; // slider for slecting max and min of Y - reset on file load or rotation
-var sliderRot, angle = 0;// Rotation slider, default 0  
+// var sliderX, xMax, xMin, plotXMax, plotXMin; // sider for selected Max and Min of X - reset on file load or rotation
+// var sliderY, yMax, yMin, plotYMax, plotYMin; // slider for slecting max and min of Y - reset on file load or rotation
+// var sliderRot, angle = 0;// Rotation slider, default 0  
 var minTime, maxTime, minLat, maxLat, minLon, maxLon, minX, maxX, minY, maxY; // from all datasets loaded
-var lineStartX, lineStartY;
-var markCounter = 1;
-var lineCounter = 1;
+// var lineStartX, lineStartY;
+// var markCounter = 1;
+// var lineCounter = 1;
 // first 6 reset on file load, last four reset on file load or rotation.  
-var R = 6378137.0; // radius of earth
-var angle = 0; // angle value (from angle slider)
+// var R = 6378137.0; // radius of earth
+// var angle = 0; // angle value (from angle slider)
 var annimationInterval; // used to remember how long before updating graph in animation
 var lastUpdate; // remembers last time graph was updated (so time delta can be calculated for annimation)
 
-var loadedData = []; //Stores all loaded data.
+// var loadedData = []; //Stores all loaded data.
 
-var parseTime = d3.timeParse("%y-%m-%d %H:%M:%S.%L");
-var t0 = new Date(2000, 1, 1);
+// var parseTime = d3.timeParse("%y-%m-%d %H:%M:%S.%L");
+// var t0 = new Date(2000, 1, 1);
 var editLabelDialog, label , labelID ;
 
 // variables for DB2
@@ -185,6 +187,10 @@ $(document).ready(function () {
   
   $("#rightcolumn").resizable({handles: 'e'});
   $("#leftcolumn").resizable({handles: 'e'});
+
+  $( "#navbar" ).menu({position: {at: "left bottom"}});
+
+  
   //$("#rightcolumn").draggable();
   //$("#leftcolumn").draggable();
   
@@ -371,7 +377,9 @@ function sortTables(method, factor){
       // if(colorCounter > colors.length-1){colorCounter = 0;}
   })
   updateMaxMin()
-  plotData();
+ 
+  plotTable(ctx, Chart.getChart('myChart'), tableStats);
+  // plotData();
   updateObjectList();
 }
 
@@ -385,6 +393,123 @@ function updateMaxMin (){
   slider.slider('values',1,maxTime);
 }
 
+function generateReport(){
+  $('#report').empty();
+  tableStats.forEach(function(item) {
+    //var smallDiv = '<div class="Card"><p></p></div>';
+    if(!item.hidden){
+      var smallDiv = '<div class="card" name="'+item.label+'"><h2>'+item.label+'</h2></div>';
+      var canvas = document.createElement('canvas');
+      $('#report').append(smallDiv).append(canvas);
+      var ctxs = canvas.getContext("2d");
+      var chart =  new Chart(ctxs, {
+                                type: 'line',
+                                data: {}
+                            });
+      plotTable(ctxs, chart, tableStats.filter(function(el){ return el.id === item.id}));
+    }
+  })
+}
+
+function plotTable(canvas, chart, toPlot){
+  //console.log(item)
+  // toPlot = tableStats.filter(function(el){ return el.id === itemId});
+  // console.log(toPlot);
+  const cfg = {
+        type: 'line',
+        data: { datasets: toPlot},
+        options: {
+          parsing: { xAxisKey: 'timestamp', yAxisKey: 'accessRate' },
+          // events: ['onhover'] ,
+          scales: {
+              x: {
+                  type: 'time',
+                  time: {
+                    //parser: 'MM/DD/YYYY HH:mm',
+                    tooltipFormat: 'MM/dd/yyyy HH:mm',
+                    minUnit: 'hour',
+                    unitStepSize: 6,
+                    displayFormats: {
+                      'hour': 'HH:00',
+                      'day': 'MM/dd/yyyy'
+                    }
+                  },
+                  /**time: {
+                      unit: 'hour',
+                      unitStepSize: 6,
+                  }, **/
+                  ticks:{
+                    enabled: true,
+                    callback: function(val, index) {
+                      // Hide every 2nd tick label
+                      //console.log(val + " " + index + " "+ this.getLabelForValue(val));
+                      return this.getLabelForValue(val);
+                    },
+                  },
+                  title: {
+                    display: true, 
+                    text:"Time",
+                  }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: "Read rate (reads/second)",
+                }
+              }
+          },
+          animation: {
+              duration: 0
+          },
+          hover: {
+            mode: 'nearest',
+            intersect: true
+          },
+          plugins: {
+            //legend: {
+              //display: false
+            //},
+            legend: {
+              position: 'right',
+              labels: {
+                usePointStyle:true,
+                pointStyle: 'line',
+                filter: function(legendItem, data) {
+                  let label = data.datasets[legendItem.datasetIndex].label || '';
+                  if (data.datasets[legendItem.datasetIndex].hidden){
+                    return false;
+                  }
+                  return label;
+                }
+              }
+            },
+            customCanvasBackgroundColor: {
+              color: 'white',
+            },
+            tooltip:{
+              enabled: true,
+              mode: 'point',
+              callbacks: {
+                label: function(context){
+                  let label = context.dataset.label || '';
+                  if (label) {
+                      label += ': ' + parseFloat(context.formattedValue).toFixed(0);
+                      label += ' @ ' + context.label;
+                  }
+                  //console.log(context);
+                  return label;
+                }
+              }
+            },
+            
+          }  
+        },
+        plugins: [plugin],
+      };
+      // var myChart = Chart.getChart('myChart')
+      chart.destroy();
+      chart = new Chart(canvas, cfg);
+}
 
 /** plotData - creates the plot 
  * 
@@ -428,7 +553,7 @@ function updateMaxMin (){
                   },
                   title: {
                     display: true, 
-                    text:"Date Time",
+                    text:"Time",
                   }
               },
               y: {
@@ -592,40 +717,6 @@ function updateColor(i, color){
   Chart.getChart('myChart').update();
 }
 
-/**
- * downloadJSON converts the various elements loaded into json and allows it to be downloaded.  
- * **/
-function downloadJSON() {
-   var fileName = 'boats.json', contentType = 'text/plain';
-    var a = document.createElement("a");
-    var file = new Blob([JSON.stringify(loadedData)], {type: contentType});
-    a.href = URL.createObjectURL(file);
-    a.download = fileName;
-    a.click();
-}
-
-/** loadJSON and onFileSelected work togehter to load a .json file into the system.  It is one saved from before, it will recreate the situation
- * **/
-function loadJSON(){
-  var fileDialog = $('<input type="file">');
-  fileDialog.click();
-  fileDialog.on("change",onFileSelected);
-    return false;
-};
-
-var onFileSelected = function(e){
-  var file = $(this)[0].files[0];
-  console.log(file);
-  var reader = new FileReader();
-  reader.addEventListener('load', function(e) { 
-    loadedData = JSON.parse(e.target.result)
-    updateMaxMin(); 
-    plotData();
-    updateObjectList();
-  });
-  reader.readAsText(file);
-};
-
 /** 
  * Screen shot takes a PNG of the current chart and downloads it.  
  * TODO: add white background before downloading.
@@ -667,11 +758,12 @@ function screenShot(){
   <h2>IZTA Db2 table candidate analysis</h2>
 </div>
 
-<div class="topnav">
+<div class="topnav" id="navbar">
   <!--a href="#" onclick="downloadJSON()">Save</a-->
   <a href="#" onclick="$('#csv').trigger('click')">Load Files</a>
   <!--a href="#" onclick="loadJSON()">Load</a-->
   <a href="#" onclick="screenShot()">Screenshot</a>
+  <a href="#" onclick="generateReport()">Report</a>
   <!--a href="#" onclick="sortTables('accessRateAve', 100)">Sort by avg</a-->
   <!--a href="#" onclick="sortTables('accessRateMax',100)">Sort by max</a-->
   <a href="help.html" rel="modal:open" class="modal" style="float:right">Help</a>
@@ -687,6 +779,7 @@ function screenShot(){
         <div id="slider" style="position: relative;"></div>
       </div>
     </div>
+    <div id="report"></div>
   </div>
   <div class="rightcolumn" id="rightcolumn">
     <div class="card" >
