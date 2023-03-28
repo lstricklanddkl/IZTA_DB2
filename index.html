@@ -301,7 +301,7 @@ $(document).ready(function () {
   var firstTableRow = rawData[0];
   //var data = [];
   //data.push({});
-  var aRateMax =0, uRateMax = 0; aRateSum=0; uRateSum=0; timeSum = 0;
+  var aRateMax =0, uRateMax = 0; aRateSum=0; uRateSum=0; timeSum = 0; hasReorg = false;
   for(i=1; i<=rawData.length-1; i++){ //rawData.length-1
     currentRow = rawData[i];
     //if(currentRow.id === "EQ_POSSESSION.EQPMN001.EQ000310.EQ"){
@@ -325,7 +325,7 @@ $(document).ready(function () {
           aRateSum += currentRow.accesses-previousRow.accesses; 
           uRateSum += currentRow.writes-previousRow.writes; 
           timeSum += currentRow.timestamp-previousRow.timestamp;
-        } 
+        } else {hasReorg = true; }
       }
     } else {
       if(previousRow.timestamp>firstTableRow.timestamp && timeSum>0){
@@ -337,7 +337,7 @@ $(document).ready(function () {
         var item = {id: previousRow.id ,label:previousRow.id.split('.')[0], accessRateMax: aRateMax, updateRateMax: uRateMax
           ,accessRateAve:arate, updateRateAve:urate, data:processedData.filter(function(el){ return el.id === previousRow.id})
           ,hidden: false, borderColor:colors[colorCounter], backgroundColor: colors[colorCounter]
-          ,pointRadius:0,borderWidth: 1}
+          ,pointRadius:0,borderWidth: 1, hasReorg:hasReorg}
         tableStats.push(item);
         //if(item.id === "EQ_POSSESSION.EQPMN001.EQ000310.EQ"){
           //console.log(aRateSum +" "+ uRateSum +" "+ timeSum)
@@ -398,7 +398,11 @@ function generateReport(){
   tableStats.forEach(function(item) {
     //var smallDiv = '<div class="Card"><p></p></div>';
     if(!item.hidden){
-      var smallDiv = '<div class="card" name="'+item.label+'"><h2>'+item.label+'</h2></div>';
+      var smallDiv = '<div class="card" name="'+item.label+'"><h2>'+item.label+'</h2>';
+      smallDiv += '<p>This tables has an average read rate (per second) of '+item.accessRateAve+' which represents a MIP usage of '+item.accessRateAve/400+' to '+item.accessRateAve/100+'MIPS for the entire period of the graph. </p>';
+      smallDiv += '<p>This tables has an peak read rate (per second) of '+item.accessRateMax+' which represents a MIP usage of '+item.accessRateMax/400+' to '+item.accessRateMx/100+'MIPS for the entire period of the peak. </p>';
+      if(item.hasReorg){smallDiv += '<p>This table has been reorg\'d at somepoint, which may impact results.  This is indicated on the graph by a sloped line (due to  missing data point when the reorg occured).</p>';}
+      smallDiv += '</div>';
       var canvas = document.createElement('canvas');
       $('#report').append(smallDiv).append(canvas);
       var ctxs = canvas.getContext("2d");
@@ -513,7 +517,7 @@ function plotTable(canvas, chart, toPlot){
 
 /** plotData - creates the plot 
  * 
- * **/ 
+ * **
   function plotData(){
       // Build data structures for plotting
       //buildPlotData(); // update data based on current settings, and convert to meters to allow for acurate dimensional plot
@@ -539,10 +543,6 @@ function plotTable(canvas, chart, toPlot){
                       'day': 'MM/dd/yyyy'
                     }
                   },
-                  /**time: {
-                      unit: 'hour',
-                      unitStepSize: 6,
-                  }, **/
                   ticks:{
                     enabled: true,
                     callback: function(val, index) {
@@ -614,7 +614,7 @@ function plotTable(canvas, chart, toPlot){
       var myChart = Chart.getChart('myChart')
       myChart.destroy();
       myChart = new Chart(ctx, cfg);
-  };
+  }; **/
 
 /** updateTime()
  * Update graph filtering based  on start and end time values
