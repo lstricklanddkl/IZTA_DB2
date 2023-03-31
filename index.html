@@ -635,7 +635,8 @@ function plotTable(canvas, chart, toPlot){
 /** updateTime()
  * Update graph filtering based  on start and end time values
  * **/
-function updateTime(){
+function updateTime()
+{
   var myChart = Chart.getChart('myChart');
   myChart.options.scales.x.min = timeStart;
   myChart.options.scales.x.max = timeEnd;
